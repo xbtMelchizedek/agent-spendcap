@@ -1,0 +1,22 @@
+{
+  "name": "agent-spendcap",
+  "version": "0.1.0",
+  "description": "Spend caps for AI agents that pay for inference: per-call and rolling-window USD limits, venue and model allow lists, a privacy floor and a rate limit, as a two-phase hold (authorize, then settle or release) on a hash-chained ledger. Exact decimals, no floats, zero network access.",
+  "keywords": ["agents", "inference", "llm", "budget", "spend-limit", "policy", "guardrails", "mcp", "x402", "ledger"],
+  "homepage": "https://xbtmelchizedek.github.io/agent-spendcap/",
+  "repository": { "type": "git", "url": "git+https://github.com/xbtMelchizedek/agent-spendcap.git" },
+  "bugs": { "url": "https://github.com/xbtMelchizedek/agent-spendcap/issues" },
+  "author": "xbtMelchizedek",
+  "license": "MIT",
+  "type": "module",
+  "exports": { ".": "./src/index.mjs", "./file": "./src/fileLedger.mjs", "./package.json": "./package.json" },
+  "bin": { "agent-spendcap": "src/cli.mjs" },
+  "files": ["src", "README.md", "CHANGELOG.md", "LICENSE", "examples"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build-web": "node scripts/build-web.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "dependencies": { "@noble/hashes": "1.8.0" }
+}

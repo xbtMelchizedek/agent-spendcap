@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "perCallMax": "0.05",
+  "windows": [
+    { "name": "hour", "seconds": 3600, "max": "0.50" },
+    { "name": "day", "seconds": 86400, "max": "2" }
+  ],
+  "venues": { "allow": ["openrouter:*", "venice", "chutes-bittensor", "pearl-labs", "local"], "deny": ["openrouter:unknown-*"] },
+  "minPrivacy": "no-retention",
+  "maxCallsPerMinute": 30,
+  "reservationTtlSeconds": 600,
+  "requireReceipt": false
+}

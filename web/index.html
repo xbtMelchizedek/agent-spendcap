@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent-spendcap playground: spend caps for agents that pay for inference</title>
+<meta name="description" content="Write a spend policy for an AI agent, then try to break it. Per-call and rolling-window caps, venue and model lists, a privacy floor, a rate limit, and a hash-chained ledger. Runs entirely in your browser.">
+<script>document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';</script>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="arc/foundation.css">
+<link rel="stylesheet" href="arc/badge.css">
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{ "imports": {
+  "@noble/hashes/sha2": "./vendor/noble-hashes/sha2.js",
+  "@noble/hashes/utils": "./vendor/noble-hashes/utils.js",
+  "@noble/hashes/crypto": "./vendor/noble-hashes/crypto.js"
+} }
+</script>
+</head>
+<body>
+<main>
+  <header>
+    <h1>agent-spendcap</h1>
+    <p class="lede">Give an agent a budget it cannot talk its way out of. Every paid inference call asks first, holds the money, then settles what it really cost or releases the hold. The library behind this page is the same one you install; nothing here leaves your browser.</p>
+    <p class="muted"><a href="https://github.com/xbtMelchizedek/agent-spendcap">GitHub</a> · <code>npx github:xbtMelchizedek/agent-spendcap help</code> · No keys, no wallet, no network calls.</p>
+  </header>
+
+  <section class="panel">
+    <h2>Policy</h2>
+    <textarea id="policy" spellcheck="false" aria-label="Policy JSON"></textarea>
+    <div class="actions"><button id="apply">Apply policy (clears the ledger)</button><button class="secondary" id="reset">Example policy</button></div>
+    <div id="policyMsg" class="muted" role="status"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Ask to spend</h2>
+    <div class="grid2">
+      <label>Venue <input id="venue" value="openrouter:pearl-research/fp8"></label>
+      <label>Model <input id="model" value="qwen/qwen3.8-27b"></label>
+      <label>Most it can cost (USD) <input id="usd" value="0.04" inputmode="decimal"></label>
+      <label>Privacy <select id="privacy"><option>any</option><option selected>no-retention</option><option>tee</option><option>local</option></select></label>
+    </div>
+    <div class="actions"><button id="auth">Authorize</button><button class="secondary" id="burst">Runaway agent: 25 calls</button><button class="secondary" id="wait">Skip 10 minutes</button></div>
+    <div id="result" role="status"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Windows</h2>
+    <div id="windows"></div>
+    <div id="clock" class="muted"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Open holds</h2>
+    <p class="muted">Holds count against every cap until settled or released, even after they expire: if you never learned what a call cost, assume the worst.</p>
+    <div id="holds" class="wrap"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Ledger</h2>
+    <p class="muted">Every decision, refusals included, is one hash-chained entry. Edit one and the chain breaks at that entry.</p>
+    <div class="actions"><button class="secondary" id="tamper">Tamper with entry 0</button><button class="secondary" id="verify">Verify chain</button></div>
+    <div id="verifyMsg" role="status"></div>
+    <div id="ledger" class="wrap"></div>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
