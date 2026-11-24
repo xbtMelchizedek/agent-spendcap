@@ -6,7 +6,7 @@ Before each paid inference call, the agent asks for permission. If every rule in
 
 - Exact decimals as strings, down to $0.000000001. No floats anywhere.
 - No network access, no wallet and no keys. One dependency: [`@noble/hashes`](https://github.com/paulmillr/noble-hashes).
-- Usable as a library, a CLI or an MCP server.
+- Usable as a library, a CLI, an MCP server, or a drop-in `fetch` wrapper for OpenAI-compatible APIs.
 
 **Live playground:** https://xbtmelchizedek.github.io/agent-spendcap/ lets you write a policy, unleash a runaway agent on it and tamper with the ledger.
 
@@ -80,6 +80,43 @@ try {
 
 In the browser or in tests, use `memoryLedger()` instead of `fileLedger(...)`.
 
+## OpenAI-compatible clients
+
+`agent-spendcap/openai` wraps any OpenAI-compatible endpoint: OpenRouter, Venice, Chutes, vLLM, or anything else that speaks Chat Completions or Responses. It handles streams too. Your code keeps calling `fetch`; the wrapper holds before each request and settles from the response's own `usage` after it.
+
+```js
+import { SpendCap, parsePolicy } from 'agent-spendcap';
+import { fileLedger } from 'agent-spendcap/file';
+import { spendcapFetch, SpendCapDenied } from 'agent-spendcap/openai';
+
+const cap = new SpendCap({ policy: parsePolicy(policyJson), ledger: fileLedger('./spend.jsonl') });
+const fetchCapped = spendcapFetch(cap, {
+  venue: 'openrouter:pearl-research/fp8',
+  prices: { inPer1M: '0.2', outPer1M: '0.8' },   // USD per 1M tokens, from your price source (e.g. justweight)
+  privacy: 'no-retention',
+  reportedCost: true,                              // OpenRouter reports usage.cost in credits (1 credit = $1)
+});
+
+const res = await fetchCapped('https://openrouter.ai/api/v1/chat/completions', {
+  method: 'POST',
+  headers: { authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'content-type': 'application/json' },
+  body: JSON.stringify({ model: 'qwen/qwen3.8-27b', max_tokens: 800, messages }),
+});
+console.log(await res.spendcap.settled); // { state: 'settled', chargedUsd: '0.0004213', basis: 'reported-cost', ... }
+```
+
+| Situation | What happens |
+|---|---|
+| Before the request | Holds an upper bound: every input byte counted as a token (a token is at least one byte) plus `max_tokens` × the output price. You can pass `estimate(body) => usd` instead. Without a `max_tokens` there's no upper bound, so the call is refused. |
+| Refused | Throws `SpendCapDenied` with `reasons`. The request is never sent. |
+| 2xx response | Settles from `usage`: `cost` if you trust it (`reportedCost`), otherwise tokens × `prices`. The receipt is the response `id`. |
+| Stream | The caller gets every byte untouched. Usage is read from the final chunk (Chat Completions) or `response.completed` (Responses). `res.spendcap.settled` resolves when the stream ends. |
+| No `usage` in the response | Charged the full hold. |
+| Non-2xx response | Hold released. Set `releaseOnHttpError: false` if your provider bills failed calls. |
+| Network error | The hold stays open and keeps counting, because the request may have been billed. The error carries `spendcapHoldId`. |
+
+The wrapper never reads or stores your API key; headers pass straight through.
+
 ## CLI
 
 ```
@@ -112,7 +149,7 @@ Inside one process, the agent can't skip the check, but it can still call a mode
 ## Develop
 
 ```sh
-npm ci && npm test        # 12 tests, including a 3,000-step random property test
+npm ci && npm test        # 19 tests, including a 3,000-step random property test
 npm run build-web         # _site/ playground; serve it with any static server
 ```
 

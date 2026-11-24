@@ -1,0 +1,8 @@
+event: response.output_text.delta
+
+data: {"type":"response.output_text.delta","delta":"ok"}
+
+event: response.completed
+
+data: {"type":"response.completed","response":{"id":"resp-synthetic-0003","object":"response","usage":{"input_tokens":19,"output_tokens":277,"total_tokens":296,"cost":0.005616}}}
+

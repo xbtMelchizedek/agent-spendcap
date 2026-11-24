@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 (2026-11-24)
+
+- New `agent-spendcap/openai`: `spendcapFetch(cap, {venue, prices, privacy, ...})` returns a fetch-compatible function for any OpenAI-compatible API (Chat Completions or Responses, streaming or not). It closes #3.
+  - **Before the request:** it holds an upper bound, counting every input byte as a token plus `max_tokens` × the output price, or your own `estimate()`. A refused call throws `SpendCapDenied` and never reaches the network.
+  - **After the request:** it settles from the response's own `usage`, either tokens × prices or, with `reportedCost: true`, OpenRouter's `usage.cost` (credits = USD). The receipt is the response id. For streams, usage is read from the final event while the caller receives every byte untouched.
+  - **When things go wrong:** with no usage, it charges the full hold. A non-2xx response releases the hold. A network error leaves the hold open, because the outcome is unknown. A required receipt that's missing also leaves the hold open, and the response is still returned.
+  - Each response carries `res.spendcap = {holdId, settled}`.
+- 19 tests (7 new). Response fixtures are synthetic and follow OpenRouter's documented shapes. No live calls.
+
 ## 0.1.0 (2026-11-24)
 
 First release.

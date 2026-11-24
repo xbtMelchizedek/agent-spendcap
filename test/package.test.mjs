@@ -10,6 +10,7 @@ test('package: bin, exports and files resolve; version matches the changelog', a
   const lib = await import('agent-spendcap');
   for (const k of ['SpendCap', 'parsePolicy', 'memoryLedger', 'verifyChain', 'toNano', 'fromNano']) assert.equal(typeof lib[k], 'function', k);
   assert.equal(typeof (await import('agent-spendcap/file')).fileLedger, 'function');
+  assert.equal(typeof (await import('agent-spendcap/openai')).spendcapFetch, 'function');
   for (const f of pkg.files) assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), f);
   assert.match(readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8'), new RegExp(`## ${pkg.version.replaceAll('.', '\\.')} `));
 });
