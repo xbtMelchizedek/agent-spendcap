@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 (2026-11-25)
 
 - `holdFor`: the output bound is now `max(n, best_of) x max_tokens` (each choice bills output); non-integer or zero `n`/`best_of` is refused. Requests with image, audio, file or video parts are refused unless you pass `estimate()`, since a short URL can bill far more than its bytes. Reported on Technocore /r/builders #41944.
 

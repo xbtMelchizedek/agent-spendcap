@@ -1,6 +1,6 @@
 {
   "name": "agent-spendcap",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Spend caps for AI agents that pay for inference: per-call and rolling-window USD limits, venue and model allow lists, a privacy floor and a rate limit, as a two-phase hold (authorize, then settle or release) on a hash-chained ledger. Exact decimals, no floats, zero network access.",
   "keywords": [
     "agents",
