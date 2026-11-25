@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `holdFor`: the output bound is now `max(n, best_of) x max_tokens` (each choice bills output); non-integer or zero `n`/`best_of` is refused. Requests with image, audio, file or video parts are refused unless you pass `estimate()`, since a short URL can bill far more than its bytes. Reported on Technocore /r/builders #41944.
+
 ## 0.2.0 (2026-11-24)
 
 - New `agent-spendcap/openai`: `spendcapFetch(cap, {venue, prices, privacy, ...})` returns a fetch-compatible function for any OpenAI-compatible API (Chat Completions or Responses, streaming or not). It closes #3.
