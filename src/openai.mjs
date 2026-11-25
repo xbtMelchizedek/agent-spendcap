@@ -19,10 +19,28 @@ export function holdFor(body, prices) {
   if (!Number.isSafeInteger(maxOut) || maxOut <= 0) {
     throw new PolicyError('max_tokens', 'set max_tokens, max_completion_tokens or max_output_tokens so the hold has an upper bound, or pass estimate()');
   }
+  // n (and legacy best_of) bill output for every choice generated, so the output bound is choices x maxOut.
+  const n = body.n ?? 1, bestOf = body.best_of ?? 1;
+  if (![n, bestOf].every((x) => Number.isSafeInteger(x) && x >= 1)) throw new PolicyError('n', 'n and best_of must be positive integers');
+  const choices = Math.max(n, bestOf);
   const input = body.messages ?? body.input ?? body.prompt;
   if (input === undefined) throw new PolicyError('messages', 'request has no messages, input or prompt');
+  // An image, audio or file part is a short URL or id in the body but bills far more than its bytes: no byte bound.
+  const media = mediaPart(input);
+  if (media) throw new PolicyError('media', `request has a ${media} part, which the byte bound can't price; pass estimate()`);
   const inBytes = enc.encode(typeof input === 'string' ? input : JSON.stringify(input)).length + enc.encode(JSON.stringify(body.tools ?? body.instructions ?? '')).length;
-  return costOf(prices, inBytes, maxOut);
+  return costOf(prices, inBytes, maxOut * choices);
+}
+
+const MEDIA_TYPES = new Set(['image_url', 'input_image', 'image', 'input_audio', 'audio', 'input_file', 'file', 'video_url', 'input_video']);
+
+/** First content-part type in the request that is billed by media size, not bytes, or null. */
+function mediaPart(v, depth = 0) {
+  if (depth > 8 || v === null || typeof v !== 'object') return null;
+  if (Array.isArray(v)) { for (const x of v) { const t = mediaPart(x, depth + 1); if (t) return t; } return null; }
+  if (typeof v.type === 'string' && MEDIA_TYPES.has(v.type)) return v.type;
+  for (const k of ['content', 'parts']) { const t = mediaPart(v[k], depth + 1); if (t) return t; }
+  return null;
 }
 
 /** USD cost of token counts at per-1M prices, rounded up to $0.000000001. */

@@ -27,6 +27,24 @@ test('estimates: byte upper bound, exact costs, reported cost rounded up', () =>
   assert.equal(chargeFrom({ prompt_tokens: 1200, completion_tokens: 300, cost: 0.0004213 }, PRICES, { reportedCost: true }).nano, 421300n);
 });
 
+test('hold bound: n and best_of multiply output, media parts refused, model-limit fallback refused', () => {
+  const body = JSON.parse(req().body);
+  const bytes = new TextEncoder().encode(JSON.stringify(body.messages)).length + 2;
+  assert.equal(holdFor({ ...body, n: 3 }, PRICES), costOf(PRICES, bytes, 1500), 'n=3 holds 3 x max_tokens');
+  assert.equal(holdFor({ model: 'm', prompt: 'hi', max_tokens: 10, best_of: 4, n: 2 }, PRICES), costOf(PRICES, 4, 40), 'best_of wins over n (2 prompt bytes + 2 for no tools)');
+  const o = { model: 'o3', max_completion_tokens: 200, messages: body.messages };
+  assert.equal(holdFor(o, PRICES), costOf(PRICES, bytes, 200), 'max_completion_tokens is the bound');
+  assert.throws(() => holdFor({ ...body, n: 0 }, PRICES), /n and best_of/);
+  assert.throws(() => holdFor({ ...body, n: 1.5 }, PRICES), /n and best_of/);
+  const img = { model: 'gpt-4o', max_tokens: 50, messages: [{ role: 'user', content: [{ type: 'text', text: 'what is this' }, { type: 'image_url', image_url: { url: 'https://x/a.png', detail: 'high' } }] }] };
+  assert.throws(() => holdFor(img, PRICES), /image_url part/);
+  const resp = { model: 'gpt-4o', max_output_tokens: 50, input: [{ role: 'user', content: [{ type: 'input_image', image_url: 'data:...' }] }] };
+  assert.throws(() => holdFor(resp, PRICES), /input_image part/);
+  const audio = { model: 'gpt-4o-audio', max_tokens: 50, messages: [{ role: 'user', content: [{ type: 'input_audio', input_audio: { data: 'AAAA', format: 'wav' } }] }] };
+  assert.throws(() => holdFor(audio, PRICES), /input_audio part/);
+  assert.throws(() => holdFor({ model: 'o3', messages: body.messages }, PRICES), /max_tokens/, 'no cap set: refused, never the model limit');
+});
+
 test('chat completion: hold, call, settle from tokens, receipt is the generation id', async () => {
   const cap = mk();
   const seen = [];
