@@ -107,7 +107,7 @@ console.log(await res.spendcap.settled); // { state: 'settled', chargedUsd: '0.0
 
 | Situation | What happens |
 |---|---|
-| Before the request | Holds an upper bound: every input byte counted as a token (a token is at least one byte) plus `max_tokens` × the output price. You can pass `estimate(body) => usd` instead. Without a `max_tokens` there's no upper bound, so the call is refused. |
+| Before the request | Holds an upper bound: every input byte counted as a token (a token is at least one byte) plus `max_tokens` × the output price. You can pass `estimate(body) => usd` instead. Without a `max_tokens` there's no upper bound, so the call is refused. With `n` or `best_of` above 1, output is held for every choice. A request with an image, audio or file part is refused (its bytes don't bound its price) unless you pass `estimate()`. |
 | Refused | Throws `SpendCapDenied` with `reasons`. The request is never sent. |
 | 2xx response | Settles from `usage`: `cost` if you trust it (`reportedCost`), otherwise tokens × `prices`. The receipt is the response `id`. |
 | Stream | The caller gets every byte untouched. Usage is read from the final chunk (Chat Completions) or `response.completed` (Responses). `res.spendcap.settled` resolves when the stream ends. |
